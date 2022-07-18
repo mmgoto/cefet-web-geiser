@@ -28,20 +28,24 @@ app.get("/", (request, response) => {
     response.render("index", { db }); // desenha a view 'index'
 });
 
-app.get("/jogador/:id/", (request, response) => {
-    const res = db.jogadores.players.find((player) => {
-        if (player.steamid == request.params.id) {
-            return player;
-        }
-    });
+app.get("/jogador/:id", (req, res) => {
+    const id = req.params.id;
+    const jogador = db.jogadores.players.find((j) => j.steamid === id);
+    const jogos = db.jogos[id].games;
 
-    const res2 = db.jogos[request.params.id];
+    jogador.quantidadeJogos = db.jogos[id].game_count;
+    jogador.quantidadeNaoJogados = jogos.filter(
+        (j) => !j.playtime_forever
+    ).length;
 
-    response.render("jogador", { res, res2 });
+    jogador.jogos = jogos
+        .sort((j1, j2) => (j1.playtime_forever < j2.playtime_forever ? 1 : -1))
+        .slice(0, 5);
+
+    jogador.jogos.forEach(
+        (j) => (j.tempo_hora = Math.round(j.playtime_forever / 60))
+    );
+    jogador.jogoPreferido = jogador.jogos[0];
+
+    res.render("jogador", jogador);
 });
-
-// EXERCÍCIO 3
-// definir rota para página de detalhes de um jogador --> renderizar a view
-// jogador, usando os dados do banco de dados "data/jogadores.json" e
-// "data/jogosPorJogador.json", assim como alguns campos calculados
-// dica: o handler desta função pode chegar a ter ~15 linhas de código
